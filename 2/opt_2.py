@@ -27,25 +27,27 @@ def grad_f3(x, y, z):
     dfdz = dfdy_p * math.sin(alpha) + dfdz_p * math.cos(alpha)
     return np.array([dfdx, dfdy, dfdz], dtype=float)
 
-def hessian_f3(x, y, z):
-    """Вычисление матрицы Гессе (вторых производных)"""
-    y_p, z_p = rotated_coords(y, z)
-    d2fdx2 = 24 * x**2
-    d2fdy_p2 = 24 * y_p**2
-    d2fdz_p2 = 2
-    d2fdxdy_p = 0
-    d2fdxdz_p = 0
-    d2fdy_pdz_p = 0
-    cos_a = math.cos(alpha)
-    sin_a = math.sin(alpha)
-    H = np.zeros((3, 3))
-    H[0, 0] = d2fdx2
-    H[0, 1] = H[1, 0] = d2fdxdy_p * cos_a - d2fdxdz_p * sin_a
-    H[0, 2] = H[2, 0] = d2fdxdy_p * sin_a + d2fdxdz_p * cos_a
-    H[1, 1] = d2fdy_p2 * cos_a**2 + d2fdz_p2 * sin_a**2 - 2 * d2fdy_pdz_p * cos_a * sin_a
-    H[1, 2] = H[2, 1] = (d2fdy_p2 - d2fdz_p2) * cos_a * sin_a + d2fdy_pdz_p * (cos_a**2 - sin_a**2)
-    H[2, 2] = d2fdy_p2 * sin_a**2 + d2fdz_p2 * cos_a**2 + 2 * d2fdy_pdz_p * cos_a * sin_a
+def numerical_hessian(f, x, eps=1e-6):
+    """Численное вычисление матрицы Гессе для любой функции в точке x"""
+    n = len(x)
+    H = np.zeros((n, n))
+    
+    for i in range(n):
+        for j in range(n):
+            # Вторая производная по i и j переменным
+            x_pp = x.copy(); x_pp[i] += eps; x_pp[j] += eps
+            x_pm = x.copy(); x_pm[i] += eps; x_pm[j] -= eps
+            x_mp = x.copy(); x_mp[i] -= eps; x_mp[j] += eps
+            x_mm = x.copy(); x_mm[i] -= eps; x_mm[j] -= eps
+            
+            H[i, j] = (f(*x_pp) - f(*x_pm) - f(*x_mp) + f(*x_mm)) / (4 * eps**2)
+    
     return H
+
+def hessian_f3(x, y, z):
+    """Вычисление матрицы Гессе (вторых производных) численным методом"""
+    point = np.array([x, y, z])
+    return numerical_hessian(f3, point)
 
 def golden_section(phi, a=-1, b=1, tol=1e-10):
     """Одномерная минимизация методом золотого сечения"""
